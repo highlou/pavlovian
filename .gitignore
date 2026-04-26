@@ -1,0 +1,25 @@
+# Created 2026-04-25
+
+# VS Code
+.vscode
+
+# Python
+__pycache__
+startvenv.bat
+
+# PyInstaller
+build
+dist
+*.spec
+*.exe
+
+# Data
+*.mp3
+*.wav
+*.ogg
+
+# Private
+private.py
+
+# Files created by app
+*.json
