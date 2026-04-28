@@ -5,19 +5,18 @@ import threading, time, re
 
 # Credit: https://gist.github.com/n1n9-jp/5857d7725f3b14cbc8ec3e878e4307ce
 def remove_emojis(text):
-    regex = re.compile(
-        '['
-        u'\U00002700-\U000027BF'  # Dingbats
-        u'\U0001F600-\U0001F64F'  # Emoticons
-        u'\U00002600-\U000026FF'  # Miscellaneous Symbols
-        u'\U0001F300-\U0001F5FF'  # Miscellaneous Symbols And Pictographs
-        u'\U0001F900-\U0001F9FF'  # Supplemental Symbols and Pictographs
-        u'\U0001FA70-\U0001FAFF'  # Symbols and Pictographs Extended-A
-        u'\U0001F680-\U0001F6FF'  # Transport and Map Symbols
-        ']+',
-        re.UNICODE
-    )
-    return re.sub(regex, '', text)
+    pattern = ''.join((
+        '[',
+        u'\U00002700-\U000027BF',  # Dingbats
+        u'\U0001F600-\U0001F64F',  # Emoticons
+        u'\U00002600-\U000026FF',  # Miscellaneous Symbols
+        u'\U0001F300-\U0001F5FF',  # Miscellaneous Symbols And Pictographs
+        u'\U0001F900-\U0001F9FF',  # Supplemental Symbols and Pictographs
+        u'\U0001FA70-\U0001FAFF',  # Symbols and Pictographs Extended-A
+        u'\U0001F680-\U0001F6FF',  # Transport and Map Symbols
+        ']+'
+    ))
+    return re.sub(pattern, ' ', text)
 
 class StreamTTS:
     _stream: str
