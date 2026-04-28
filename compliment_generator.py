@@ -16,7 +16,7 @@ USAGE = f'''USAGE:
     n_compliments: Number of compliments to generate
     model: Name of LLM to use availabe on Ollama'''
 
-COMPLIMENT_MAX_LEN_CHARS = 350
+COMPLIMENT_MAX_LEN_CHARS = 400
 
 if __name__ == '__main__':
     set_usage(USAGE)
@@ -43,11 +43,10 @@ if __name__ == '__main__':
     for i in range(n_compliments):
         print('Generating compliment', i+1, end='...', flush=True)
 
-        prompt = f'Generate ONLY ONE SUPER WARM AND KIND-HEARTED AND CARING one-to-two-sentence\
-compliment which incorporates ALL INFORMATION AVAILABLE to a {age}-year-old {gender} named {name}.\n{extra_info_msg}'
+        prompt = f'''Generate ONLY ONE SUPER WARM AND KIND-HEARTED AND CARING SHORT AND BRIEF one-to-two-sentence\
+compliment which incorporates ALL INFORMATION AVAILABLE to a {age}-year-old {gender} named {name}.\n\
+Be super personal and amiable as if they're your friend. {extra_info_msg}'''
         
-        # print('prompt:', prompt)
-
         try_again = True
 
         while try_again:
@@ -56,7 +55,8 @@ compliment which incorporates ALL INFORMATION AVAILABLE to a {age}-year-old {gen
                 prompt,
                 options={
                     'temperature': 5.0
-                }
+                },
+                think=False
             )
 
             if len(response.response) <= COMPLIMENT_MAX_LEN_CHARS:

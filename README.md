@@ -34,12 +34,14 @@ Before the code is able to run you must first rename `private1.py` to `private.p
 
 This is the main script that does the Pavlovian conditioning. If you run it like so:
 ```cmd
-python pavlovian.py setup
+python pavlovian.py setup <length of experiment> <days until only NS is played>
 ```
 
-It sets up the Pavlovian experiment and save the information into `experiment_info.json`. It stores the date the experiment starts, which is the date you run the script, the last date of the experiment (end date), as well as the date starting on which the script will only play the neutral stimulus withou the unconditioned stimulus.
+It sets up the Pavlovian experiment and save the information into `experiment_info.json`. It stores the date the experiment starts, which is the date on which you run the script, the last date of the experiment (end date), as well as the date starting on which the script will only play the neutral stimulus withou the unconditioned stimulus, depending on what you sent it.
 
 If you run it without any arguments, it will play the neutral stimulus with or without the unconditioned stimulus, depending on the current day, at random times while your computer is running.
+
+It gets its compliments come from `compliments.json`.
 
 #### compliment_generator.py
 
@@ -47,9 +49,7 @@ Generates the compliments and saves them to `compliments.json`. Run the script i
 
 ## Build pavlovian.py
 
-This project uses PyInstaller.
-
-The output executable is in the main root directory.
+This project uses PyInstaller to build `pavlovian.py` into one executable file, `pavlovian.exe`, which will be placed in the project directory.
 
 ### On Windows
 
@@ -59,4 +59,4 @@ Just run:
 build.bat
 ```
 
-And a console-less executable named `pavlovian.exe` will be created in the main root directory.
+And a console-less executable named `pavlovian.exe` will be created in the project directory.

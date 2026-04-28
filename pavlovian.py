@@ -1,7 +1,6 @@
 # Created 2026-04-25
 
 import random, time, json, os, sys
-# import calendar
 from datetime import datetime, timedelta
 
 from playsound3 import playsound
@@ -12,9 +11,13 @@ import private
 import util
 
 USAGE = f'''USAGE:
-        {sys.argv[0]} <mode: enum|optional>
+        {sys.argv[0]} <mode: enum|optional> <options for mode>
 
-    mode: Either 'setup' (sets up the experiment) or not passed at all'''
+    mode: Either 'setup' (sets up the experiment) or not passed at all
+        'setup':
+                {sys.argv[0]} setup <length: int> <days_until_neutral: int>
+            length: Length of experiment in days
+            days_until_neutral: Number of days until the unconditioned stimulus is taken away'''
 
 SCRIPT_DIR = private.SCRIPT_DIR
 
@@ -24,12 +27,9 @@ EXPERIMENT_INFO_FILEPATH = os.path.join(SCRIPT_DIR, EXPERIMENT_INFO_FILENAME)
 NEUTRAL_SOUND_FILENAME = private.NEUTRAL_SOUND_FILENAME
 NEUTRAL_SOUND_FILEPATH = os.path.join(SCRIPT_DIR, NEUTRAL_SOUND_FILENAME)
 
-EXPERIMENT_LENGTH = 6
-DAYS_UNTIL_ONLY_NEUTRAL = 5
-
 SPEECH_RATE_WPM = 160
-TIME_WAIT_MAX_S = 3 * 60 * 60
-TIME_WAIT_MIN_S = 1 * 60 * 60
+TIME_WAIT_MAX_S = 2 * 60 * 60
+TIME_WAIT_MIN_S = 0.75 * 60 * 60
 
 def load_experiment_info() -> list[dict]:
     experiment_info = None
@@ -46,14 +46,13 @@ def load_experiment_info() -> list[dict]:
 
     return experiment_info
 
-
 def store_experiment_info(data: list[dict]) -> None:
     with open(EXPERIMENT_INFO_FILEPATH, mode="w", encoding="ascii") as file:
         json.dump(data, file, ensure_ascii=True, indent=2)
 
-def do_random_compliment(update_comp_list: bool = True):
+def do_random_compliment(update_comp_list: bool = True) -> str:
     comp_list = compliments.load_compliments()
-    idx = random.randint(0, len(comp_list))
+    idx = random.randint(0, len(comp_list) - 1)
     compliment = comp_list.pop(idx)
 
     tts.say(compliment['text'])
@@ -61,57 +60,92 @@ def do_random_compliment(update_comp_list: bool = True):
     
     if update_comp_list:
         compliments.store_compliments(comp_list)
+    
+    return compliment['text']
 
 def do_neutral_stimulus():
     playsound(NEUTRAL_SOUND_FILEPATH)
 
-def do_unconditioned_stimulus():
-    do_random_compliment()
+def do_unconditioned_stimulus() -> str:
+    return do_random_compliment()
 
-def do_both_stimuli():
+def do_both_stimuli() -> str:
     do_neutral_stimulus()
-    do_unconditioned_stimulus()
+    return do_unconditioned_stimulus()
 
 if __name__ == '__main__':
     util.set_usage(USAGE)
-    util.assert_usage(len(sys.argv) <= 2, 'not the right number of arguments')
 
     mode = None
-    if len(sys.argv) == 2:
+    if len(sys.argv) >= 2:
         mode = sys.argv[1]
 
-    util.assert_usage(mode in (None, 'setup'), "mode neither 'setup' nor omitted")
+    private.setup(mode)
 
     if mode == 'setup':
+        util.assert_usage(len(sys.argv) == 4, 'too many or too few arguments for mode setup')
+        
+        _, _, experiment_length, days_until_only_neutral = util.unpack_typed(
+            sys.argv,
+            None,
+            str,
+            int,
+            int
+        )
+
         today = datetime.fromtimestamp(time.mktime(time.localtime())).date()
 
         experiment_info = {
             'dtd_start_date': today.timetuple(),
-            'dtd_only_neutral_date': (today + timedelta(days=DAYS_UNTIL_ONLY_NEUTRAL)).timetuple(),
-            'dtd_end_date': (today + timedelta(days=EXPERIMENT_LENGTH)).timetuple()
+            'dtd_only_neutral_date': (today + timedelta(days=days_until_only_neutral)).timetuple(),
+            'dtd_end_date': (today + timedelta(days=experiment_length)).timetuple()
         }
 
         store_experiment_info(experiment_info)
-    else:
+    elif mode == None:
         tts = text_to_speech.StreamTTS()
 
         tts.start()
 
         tts.engine.setProperty('rate', SPEECH_RATE_WPM)
+
+        voices = tts.engine.getProperty('voices')
+        tts.engine.setProperty('voice', voices[1].id)
         
         experiment_info = load_experiment_info()
 
         while True:
-            time.sleep(random.randint(TIME_WAIT_MIN_S, TIME_WAIT_MAX_S))
+            time.sleep(random.uniform(TIME_WAIT_MIN_S, TIME_WAIT_MAX_S))
 
-            today = datetime.fromtimestamp(time.mktime(time.localtime())).date()
+            dt_right_now = datetime.fromtimestamp(time.mktime(time.localtime()))
+            today = dt_right_now.date()
+            dt_time_of_day = dt_right_now.time()
+
+            if private.is_do_not_disturb_time(dt_right_now):
+                # No stimuli from the experiment should be played during this
+                # time.
+                continue
+        
+            neutral_only = False
+            compliment = None
             
             if today < experiment_info['dtd_only_neutral_date']:
-                # Part A: Play both neutral and unconditioned stimulus.
-                do_both_stimuli()
+                neutral_only = False
             elif today >= experiment_info['dtd_only_neutral_date'] \
                     and today <= experiment_info['dtd_end_date']:
-                # Part B: Play just the neutral stimulus.
-                do_neutral_stimulus()
+                neutral_only = True
             else: # Part C: This experiment is over. Quit.
                 break
+        
+            private.on_stimulus(neutral_only)
+            
+            if not neutral_only:
+                # Part A: Play both neutral and unconditioned stimulus.
+                compliment = do_both_stimuli()
+            else:
+                # Part B: Play just the neutral stimulus.
+                do_neutral_stimulus()
+            
+            private.on_stimulus_end(neutral_only, compliment)
+    else:
+        util.assert_usage(False, f'unknown mode {repr(mode)}')

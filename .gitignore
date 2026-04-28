@@ -13,13 +13,17 @@ dist
 *.spec
 *.exe
 
-# Data
+# Media data
 *.mp3
 *.wav
 *.ogg
+*.avi
 
 # Private
+TODO
 private.py
+test.py
 
 # Files created by app
 *.json
+*.txt
