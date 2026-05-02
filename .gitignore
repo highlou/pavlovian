@@ -23,6 +23,7 @@ dist
 TODO
 private.py
 test.py
+private
 
 # Files created by app
 *.json
